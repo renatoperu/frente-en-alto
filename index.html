@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1E1B5E">
+<title>Frente en Alto</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&display=swap">
+<style>
+/* Concepto: un juego de una sola pantalla. El menú es azul ultramar con mazos de colores;
+   al jugar, toda la pantalla toma el color del mazo y la palabra ocupa el centro. */
+:root {
+  --bg: #1E1B5E;
+  --paper: #FFFFFF;
+  --ink: #14123A;
+  --sun: #FFD23F;
+  --ok: #3DDC97;
+  --skip: #FFA94D;
+  --page: var(--bg);
+  --fg: var(--paper);
+  --font-display: "Baloo 2", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+[hidden] { display: none !important; }
+body {
+  background: var(--page);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.4;
+  padding-block: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
+.stage :focus-visible { outline-color: var(--ink); }
+
+#app { min-height: 100%; max-width: 640px; margin: 0 auto; }
+.screen { display: flex; flex-direction: column; gap: 18px; min-height: 100%; }
+
+/* ---------- Menú ---------- */
+.brand { padding-top: 8px; }
+.wordmark {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 13vw, 4rem);
+  line-height: .95;
+  color: var(--sun);
+  text-shadow: 0 4px 0 #FF5C8A;
+  transform: rotate(-2deg);
+  transform-origin: left center;
+  text-wrap: balance;
+}
+.tagline { margin: 14px 0 0; font-size: 1.05rem; font-weight: 600; opacity: .92; }
+
+.settings { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.settings .label { font-weight: 800; margin-right: 2px; }
+.chip {
+  min-height: 44px;
+  padding: 6px 16px;
+  border-radius: 99px;
+  border: 2px solid rgba(255,255,255,.45);
+  background: transparent;
+  font-weight: 800;
+}
+.chip[aria-pressed="true"] { background: var(--sun); border-color: var(--sun); color: var(--ink); }
+
+.section-title { margin: 6px 0 -6px; font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; }
+
+.decks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.deck {
+  min-width: 0;
+  min-height: 128px;
+  padding: 14px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--c);
+  color: var(--ink);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  box-shadow: 0 6px 0 rgba(0,0,0,.35);
+}
+.deck:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.35); }
+.deck .e { font-size: 2.3rem; line-height: 1; }
+.deck .n { font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; line-height: 1.05; overflow-wrap: anywhere; }
+.deck .m { font-size: .85rem; font-weight: 800; opacity: .8; }
+.deck.mix { grid-column: 1 / -1; min-height: 96px; background: linear-gradient(90deg, #FFC93C, #FF6F91, #6EB6FF, #8BD450); }
+
+.howto { background: rgba(255,255,255,.09); border-radius: 16px; padding: 12px 16px; }
+.howto summary { font-weight: 800; cursor: pointer; }
+.howto ol { margin: 10px 0 0; padding-left: 1.2em; display: grid; gap: 6px; }
+
+/* ---------- Pantallas con color de mazo ---------- */
+.stage { color: var(--ink); }
+.back { align-self: flex-start; background: transparent; border: 0; font-weight: 800; padding: 10px 4px; color: var(--ink); }
+.center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; }
+.big-emoji { font-size: 5rem; line-height: 1; }
+.center h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(2rem, 9vw, 3rem); line-height: 1; }
+.center p { margin: 0; max-width: 30ch; font-weight: 700; }
+.cta {
+  min-height: 62px;
+  padding: 12px 30px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--sun);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  box-shadow: 0 6px 0 rgba(0,0,0,.35);
+}
+.stage .cta { background: var(--ink); color: var(--paper); box-shadow: 0 6px 0 rgba(20,18,58,.35); }
+.cta:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.35); }
+.ghost { min-height: 52px; padding: 10px 24px; border-radius: 16px; border: 2px solid rgba(255,255,255,.5); background: transparent; font-weight: 800; }
+
+.count { font-family: var(--font-display); font-weight: 800; font-size: clamp(6rem, 40vw, 11rem); line-height: 1; }
+
+/* ---------- Juego ---------- */
+.hud { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+.mini { justify-self: start; min-height: 44px; padding: 6px 14px; border-radius: 99px; border: 2px solid var(--ink); background: transparent; font-weight: 800; color: var(--ink); }
+.time { font-family: var(--font-display); font-weight: 800; font-size: 2.6rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.score { justify-self: end; text-align: right; font-family: var(--font-display); font-weight: 800; font-size: 2rem; line-height: 1; }
+.score small { display: block; font-family: var(--font-body); font-size: .75rem; font-weight: 800; }
+.bar { height: 14px; border-radius: 99px; background: rgba(20,18,58,.2); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 100%; background: var(--ink); transition: width .1s linear; }
+.urgent .time { animation: pulse .5s ease-in-out infinite alternate; }
+@keyframes pulse { from { transform: scale(1); } to { transform: scale(1.14); } }
+
+.wordzone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 16px; border-radius: 28px; }
+.good .wordzone { background: var(--ok); }
+.skip .wordzone { background: var(--skip); }
+.deck-tag { font-size: 2.6rem; line-height: 1; }
+.word {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 14vw, 5.4rem);
+  line-height: 1;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.act {
+  min-height: 88px;
+  border: 3px solid var(--ink);
+  border-radius: 24px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.6rem;
+  box-shadow: 0 6px 0 rgba(20,18,58,.4);
+}
+.act:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(20,18,58,.4); }
+.act.pass { background: var(--skip); }
+.act.ok { background: var(--ok); }
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .word { font-size: clamp(2rem, 16vh, 4.5rem); }
+  .act { min-height: 60px; font-size: 1.3rem; }
+  .deck-tag { font-size: 1.8rem; }
+  .time { font-size: 2rem; }
+}
+
+.tiltnote { margin: 0; text-align: center; font-weight: 800; font-size: .9rem; }
+
+/* ---------- Resultados ---------- */
+.result-head { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 8px; }
+.kicker { margin: 0; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; font-size: .85rem; opacity: .85; }
+.big-score { font-family: var(--font-display); font-weight: 800; font-size: clamp(5rem, 28vw, 8rem); line-height: 1; color: var(--sun); }
+.result-head .lbl { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; }
+.msg { margin: 6px 0 0; font-weight: 700; }
+.record { margin: 8px 0 0; padding: 6px 16px; border-radius: 99px; background: var(--sun); color: var(--ink); font-weight: 800; }
+.res-list h3 { margin: 0 0 8px; font-family: var(--font-display); font-size: 1.2rem; font-weight: 800; }
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.chips li { padding: 6px 14px; border-radius: 99px; background: var(--ok); color: var(--ink); font-weight: 800; overflow-wrap: anywhere; }
+.chips.passed li { background: var(--skip); }
+.result-actions { display: grid; gap: 12px; margin-top: auto; padding-top: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .urgent .time { animation: none; }
+  .bar i { transition: none; }
+  .deck:active, .cta:active, .act:active { transform: none; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="home" class="screen">
+    <header class="brand">
+      <h1 class="wordmark">Frente en Alto</h1>
+      <p class="tagline">El juego de adivinar palabras para toda la familia</p>
+    </header>
+
+    <div class="settings">
+      <span class="label">Tiempo</span>
+      <button class="chip" data-sec="30" aria-pressed="false">30 s</button>
+      <button class="chip" data-sec="60" aria-pressed="true">60 s</button>
+      <button class="chip" data-sec="90" aria-pressed="false">90 s</button>
+      <button class="chip" id="soundBtn" aria-pressed="true">Sonido: sí</button>
+      <button class="chip" id="tiltBtn" aria-pressed="false">Modo frente: no</button>
+    </div>
+
+    <h2 class="section-title">Elige un mazo</h2>
+    <div id="decks" class="decks"></div>
+
+    <details class="howto">
+      <summary>¿Cómo se juega?</summary>
+      <ol>
+        <li>Elige un mazo y dale el teléfono a alguien que no mire la pantalla: puede sostenerlo en la frente o dárselo a un ayudante.</li>
+        <li>Los demás ven la palabra y dan pistas: actúan, describen o hacen sonidos. ¡Sin decir la palabra!</li>
+        <li>Cuando la adivinan, el ayudante toca <b>¡Correcto!</b>. Si es muy difícil, toca <b>Pasar</b>.</li>
+        <li>Al terminar el tiempo, ¡a ver cuántas palabras lograron!</li>
+      </ol>
+    </details>
+  </section>
+
+  <section id="ready" class="screen stage" hidden>
+    <button class="back" id="backBtn">‹ Volver</button>
+    <div class="center">
+      <div class="big-emoji" id="readyEmoji"></div>
+      <h2 id="readyName"></h2>
+      <p id="readyInfo"></p>
+      <p id="tiltHint" hidden>Modo frente: pon el teléfono en horizontal sobre la frente. Inclínalo hacia abajo si aciertan y hacia arriba para pasar.</p>
+      <p>Una persona adivina y las demás dan pistas. ¡Sin decir la palabra!</p>
+      <button class="cta" id="startBtn">¡Empezar!</button>
+    </div>
+  </section>
+
+  <section id="countdown" class="screen stage" hidden>
+    <div class="center">
+      <div class="count" id="countNum">3</div>
+      <p>¡Prepárense!</p>
+    </div>
+  </section>
+
+  <section id="play" class="screen stage" hidden>
+    <div class="hud">
+      <button class="mini" id="endBtn">Terminar</button>
+      <div class="time" id="timeText">1:00</div>
+      <div class="score"><span id="scoreNum">0</span><small>aciertos</small></div>
+    </div>
+    <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+    <div class="wordzone">
+      <div class="deck-tag" id="deckTag" aria-hidden="true"></div>
+      <div class="word" id="word" aria-live="polite"></div>
+    </div>
+    <p class="tiltnote" id="tiltNote" hidden>No detecto el movimiento del teléfono. Usa los botones.</p>
+    <div class="actions">
+      <button class="act pass" id="passBtn">Pasar</button>
+      <button class="act ok" id="okBtn">¡Correcto!</button>
+    </div>
+  </section>
+
+  <section id="results" class="screen" hidden>
+    <div class="result-head">
+      <p class="kicker">Se acabó el tiempo</p>
+      <div class="big-score" id="finalScore">0</div>
+      <p class="lbl" id="finalLabel">aciertos</p>
+      <p class="msg" id="finalMsg"></p>
+      <p class="record" id="recordMsg" hidden>¡Nuevo récord en este mazo!</p>
+    </div>
+    <div class="res-list" id="listOk" hidden>
+      <h3>Adivinadas</h3>
+      <ul class="chips" id="okList"></ul>
+    </div>
+    <div class="res-list" id="listPass" hidden>
+      <h3>Pasadas</h3>
+      <ul class="chips passed" id="passList"></ul>
+    </div>
+    <div class="result-actions">
+      <button class="cta" id="againBtn">Jugar otra vez</button>
+      <button class="ghost" id="homeBtn">Elegir otro mazo</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var DECKS = [
+    { id: 'animales', name: 'Animales', emoji: '🦁', color: '#FFC93C', words: [
+      'Perro', 'Gato', 'Elefante', 'Jirafa', 'León', 'Mono', 'Pingüino', 'Delfín', 'Tortuga', 'Conejo',
+      'Cocodrilo', 'Mariposa', 'Abeja', 'Pulpo', 'Canguro', 'Oso panda', 'Loro', 'Caballo', 'Vaca', 'Cerdo',
+      'Murciélago', 'Búho', 'Tiburón', 'Rana', 'Serpiente', 'Hipopótamo', 'Cebra', 'Camello', 'Ardilla', 'Gallina'
+    ] },
+    { id: 'comida', name: 'Comida', emoji: '🍕', color: '#FF8A5B', words: [
+      'Pizza', 'Helado', 'Chocolate', 'Plátano', 'Hamburguesa', 'Papas fritas', 'Sandía', 'Pan', 'Huevo frito', 'Espagueti',
+      'Galleta', 'Queso', 'Manzana', 'Pollo a la brasa', 'Ceviche', 'Arroz con leche', 'Palomitas', 'Zanahoria', 'Torta de cumpleaños', 'Sopa',
+      'Jugo de naranja', 'Fresa', 'Uva', 'Piña', 'Salchipapa', 'Empanada', 'Choclo', 'Mazamorra morada', 'Sándwich', 'Caramelo'
+    ] },
+    { id: 'mimica', name: 'Mímica', emoji: '🕺', color: '#FF6F91', words: [
+      'Dormir', 'Nadar', 'Bailar', 'Cantar', 'Cepillarse los dientes', 'Volar como pájaro', 'Manejar un carro', 'Tomar una foto', 'Lavarse las manos', 'Saltar la soga',
+      'Comer espagueti', 'Tocar la guitarra', 'Patear una pelota', 'Llorar', 'Reír', 'Escalar una montaña', 'Montar bicicleta', 'Pintar un cuadro', 'Hablar por teléfono', 'Cocinar',
+      'Estornudar', 'Peinarse', 'Bostezar', 'Caminar como robot', 'Remar en un bote', 'Barrer el piso', 'Hacer ejercicio', 'Lanzar una pelota', 'Abrir un regalo', 'Caminar en la nieve'
+    ] },
+    { id: 'oficios', name: 'Oficios', emoji: '👩‍🚒', color: '#4FD1C5', words: [
+      'Doctor', 'Bombero', 'Policía', 'Profesora', 'Cocinero', 'Piloto', 'Astronauta', 'Panadero', 'Dentista', 'Pintor',
+      'Cantante', 'Futbolista', 'Granjero', 'Mecánico', 'Cartero', 'Payaso', 'Veterinario', 'Albañil', 'Científico', 'Peluquero',
+      'Chofer', 'Mago', 'Fotógrafo', 'Detective', 'Jardinero', 'Enfermera', 'Pescador', 'Carpintero', 'Arquitecto', 'Bailarina'
+    ] },
+    { id: 'peru', name: 'Perú', emoji: '🦙', color: '#F25C54', words: [
+      'Machu Picchu', 'Llama', 'Alpaca', 'Cóndor', 'Ceviche', 'Lago Titicaca', 'Cusco', 'Lima', 'Selva amazónica', 'Papa',
+      'Choclo', 'Quinua', 'Cuy', 'Marinera', 'Charango', 'Zampoña', 'Quipu', 'Inca', 'Líneas de Nasca', 'Paracas',
+      'Vicuña', 'Oso de anteojos', 'Gallito de las rocas', 'Chullo', 'Pachamanca', 'Anticucho', 'Lúcuma', 'Cajón peruano', 'Delfín rosado', 'Mazamorra morada'
+    ] },
+    { id: 'deportes', name: 'Deportes y juegos', emoji: '⚽', color: '#8BD450', words: [
+      'Fútbol', 'Vóley', 'Natación', 'Básquet', 'Tenis', 'Ciclismo', 'Escondidas', 'Piedra, papel o tijera', 'Trompo', 'Saltar la soga',
+      'Ajedrez', 'Ping pong', 'Surf', 'Patinaje', 'Gimnasia', 'Karate', 'Correr', 'Yoyo', 'Pompas de jabón', 'Globo',
+      'Cometa', 'Resbaladera', 'Columpio', 'Rompecabezas', 'Dominó', 'Cartas', 'Videojuegos', 'Skate', 'Béisbol', 'Las bolitas'
+    ] },
+    { id: 'casa', name: 'En casa y el cole', emoji: '🎒', color: '#6EB6FF', words: [
+      'Mochila', 'Lápiz', 'Cuaderno', 'Tijeras', 'Borrador', 'Pizarra', 'Cama', 'Refrigeradora', 'Televisor', 'Espejo',
+      'Zapatillas', 'Paraguas', 'Reloj', 'Lentes', 'Escoba', 'Cepillo de dientes', 'Almohada', 'Teléfono', 'Puerta', 'Ventana',
+      'Sofá', 'Lámpara', 'Cuchara', 'Plato', 'Vaso', 'Llave', 'Regla', 'Libro', 'Colores', 'Lonchera'
+    ] },
+    { id: 'cuentos', name: 'Cuentos y fantasía', emoji: '🐉', color: '#9B8CFF', words: [
+      'Caperucita Roja', 'Cenicienta', 'Blancanieves', 'Los tres chanchitos', 'Pinocho', 'Hada madrina', 'Dragón', 'Unicornio', 'Sirena', 'Pirata',
+      'Mago', 'Princesa', 'Caballero', 'Gigante', 'Fantasma', 'Bruja', 'Robot', 'Extraterrestre', 'Superhéroe', 'Tesoro',
+      'Castillo', 'Varita mágica', 'Dinosaurio', 'Aladino', 'El patito feo', 'Hansel y Gretel', 'Rapunzel', 'Duende', 'Vampiro', 'Momia'
+    ] },
+    { id: 'emociones', name: 'Emociones y cuerpo', emoji: '😮', color: '#F7A8E8', words: [
+      'Feliz', 'Triste', 'Enojado', 'Sorprendido', 'Cansado', 'Asustado', 'Nervioso', 'Mano', 'Pie', 'Ojo',
+      'Nariz', 'Oreja', 'Boca', 'Dedo', 'Rodilla', 'Codo', 'Cabeza', 'Corazón', 'Hambre', 'Sed',
+      'Frío', 'Calor', 'Cosquillas', 'Hipo', 'Orgulloso', 'Aburrido', 'Tímido', 'Dientes', 'Lengua', 'Pelo'
+    ] },
+    { id: 'transporte', name: 'Transportes y espacio', emoji: '🚀', color: '#5ED0F5', words: [
+      'Avión', 'Barco', 'Helicóptero', 'Cohete', 'Bicicleta', 'Tren', 'Bus', 'Moto', 'Submarino', 'Camión',
+      'Ambulancia', 'Patineta', 'Globo aerostático', 'Luna', 'Sol', 'Estrella', 'Planeta', 'Nave espacial', 'Satélite', 'Cometa',
+      'Marte', 'Tierra', 'Arcoíris', 'Nube', 'Lluvia', 'Trueno', 'Volcán', 'Nieve', 'Mar', 'Taxi'
+    ] }
+  ];
+
+  var ORIGIN = {};
+  var seen = {};
+  var mixWords = [];
+  DECKS.forEach(function (d) {
+    d.words.forEach(function (w) {
+      if (!seen[w]) { seen[w] = true; mixWords.push(w); ORIGIN[w] = d.emoji; }
+    });
+  });
+  var MIX = { id: 'mezcla', name: 'Mezcla loca', emoji: '🎲', color: '#F2F2FF', words: mixWords, mix: true };
+  var ALL = DECKS.concat([MIX]);
+
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- Preferencias guardadas ---------- */
+  var KEY = 'frente-en-alto:v1';
+  var IS_MOBILE = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent);
+  var store = { sec: 60, sound: true, tilt: IS_MOBILE && ('DeviceOrientationEvent' in window), best: {} };
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (raw) {
+      var o = JSON.parse(raw);
+      if (o && [30, 60, 90].indexOf(o.sec) >= 0) store.sec = o.sec;
+      if (o && typeof o.sound === 'boolean') store.sound = o.sound;
+      if (o && typeof o.tilt === 'boolean') store.tilt = o.tilt;
+      if (o && o.best && typeof o.best === 'object') store.best = o.best;
+    }
+  } catch (e) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+
+  /* ---------- Sonido ---------- */
+  var ac = null;
+  function ensureAudio() {
+    if (ac) { try { if (ac.state === 'suspended') ac.resume(); } catch (e) {} return; }
+    try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = null; }
+  }
+  function tone(freq, at, dur, type, vol) {
+    if (!ac || !store.sound) return;
+    try {
+      var o = ac.createOscillator(), g = ac.createGain();
+      var t = ac.currentTime + at;
+      o.type = type || 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol || 0.18, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(ac.destination);
+      o.start(t); o.stop(t + dur + 0.03);
+    } catch (e) {}
+  }
+  var sfx = {
+    ok: function () { tone(660, 0, 0.12); tone(880, 0.1, 0.2); },
+    skip: function () { tone(330, 0, 0.14, 'triangle'); tone(247, 0.1, 0.22, 'triangle'); },
+    tick: function () { tone(900, 0, 0.06, 'square', 0.07); },
+    count: function () { tone(520, 0, 0.15); },
+    go: function () { tone(880, 0, 0.3); },
+    end: function () { tone(440, 0, 0.2, 'sawtooth', 0.1); tone(330, 0.2, 0.2, 'sawtooth', 0.1); tone(220, 0.4, 0.45, 'sawtooth', 0.1); }
+  };
+
+  /* ---------- Estado ---------- */
+  var state = { deck: null, bags: {}, correct: [], passed: [], current: '', active: false, locked: false, endAt: 0, total: 0, timer: null, lastSec: null };
+  var SCREENS = ['home', 'ready', 'countdown', 'play', 'results'];
+
+  function show(name, deck) {
+    SCREENS.forEach(function (s) { $(s).hidden = (s !== name); });
+    var r = document.documentElement.style;
+    if (deck && (name === 'ready' || name === 'countdown' || name === 'play')) {
+      r.setProperty('--page', deck.color);
+      r.setProperty('--fg', '#14123A');
+    } else {
+      r.removeProperty('--page');
+      r.removeProperty('--fg');
+    }
+    window.scrollTo(0, 0);
+  }
+
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function nextWord() {
+    var d = state.deck;
+    var bag = state.bags[d.id];
+    if (!bag || !bag.length) {
+      bag = shuffle(d.words.slice());
+      if (bag.length > 1 && bag[bag.length - 1] === state.current) {
+        var t = bag[0]; bag[0] = bag[bag.length - 1]; bag[bag.length - 1] = t;
+      }
+      state.bags[d.id] = bag;
+    }
+    return bag.pop();
+  }
+
+  /* ---------- Menú ---------- */
+  function renderDecks() {
+    var box = $('decks');
+    box.textContent = '';
+    ALL.forEach(function (d) {
+      var b = document.createElement('button');
+      b.className = 'deck' + (d.mix ? ' mix' : '');
+      b.style.setProperty('--c', d.color);
+      var e = document.createElement('span'); e.className = 'e'; e.textContent = d.emoji;
+      var n = document.createElement('span'); n.className = 'n'; n.textContent = d.name;
+      var m = document.createElement('span'); m.className = 'm';
+      var best = store.best[d.id];
+      m.textContent = best ? ('Récord: ' + best) : (d.words.length + ' palabras');
+      b.appendChild(e); b.appendChild(n); b.appendChild(m);
+      b.addEventListener('click', function () { pickDeck(d); });
+      box.appendChild(b);
+    });
+  }
+
+  function syncSettings() {
+    var chips = document.querySelectorAll('[data-sec]');
+    for (var i = 0; i < chips.length; i++) {
+      chips[i].setAttribute('aria-pressed', String(Number(chips[i].getAttribute('data-sec')) === store.sec));
+    }
+    $('soundBtn').setAttribute('aria-pressed', String(store.sound));
+    $('soundBtn').textContent = 'Sonido: ' + (store.sound ? 'sí' : 'no');
+    $('tiltBtn').setAttribute('aria-pressed', String(store.tilt));
+    $('tiltBtn').textContent = 'Modo frente: ' + (store.tilt ? 'sí' : 'no');
+  }
+
+  function pickDeck(d) {
+    state.deck = d;
+    $('readyEmoji').textContent = d.emoji;
+    $('readyName').textContent = d.name;
+    $('readyInfo').textContent = d.words.length + ' palabras · ' + store.sec + ' segundos';
+    $('tiltHint').hidden = !store.tilt;
+    show('ready', d);
+  }
+
+  /* ---------- Cuenta regresiva y ronda ---------- */
+  function runCountdown() {
+    var d = state.deck;
+    var n = 3;
+    show('countdown', d);
+    $('countNum').textContent = String(n);
+    sfx.count();
+    var iv = setInterval(function () {
+      n--;
+      if (n > 0) {
+        $('countNum').textContent = String(n);
+        sfx.count();
+      } else {
+        clearInterval(iv);
+        $('countNum').textContent = '¡Ya!';
+        sfx.go();
+        setTimeout(startRound, 600);
+      }
+    }, 800);
+  }
+
+  function fmt(sec) {
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function setWord() {
+    var w = nextWord();
+    state.current = w;
+    $('word').textContent = w;
+    $('deckTag').textContent = state.deck.mix ? (ORIGIN[w] || state.deck.emoji) : state.deck.emoji;
+  }
+
+  function startRound() {
+    state.correct = [];
+    state.passed = [];
+    state.active = true;
+    state.locked = false;
+    state.lastSec = null;
+    tiltArmed = false;
+    gotOrient = false;
+    state.total = store.sec * 1000;
+    state.endAt = Date.now() + state.total;
+    $('scoreNum').textContent = '0';
+    $('play').classList.remove('good', 'skip', 'urgent');
+    show('play', state.deck);
+    setWord();
+    clearInterval(state.timer);
+    state.timer = setInterval(tick, 100);
+    tick();
+    $('tiltNote').hidden = true;
+    clearTimeout(noteTimer);
+    if (store.tilt) {
+      noteTimer = setTimeout(function () { if (state.active && !gotOrient) $('tiltNote').hidden = false; }, 2500);
+    }
+    keepAwake(true);
+  }
+
+  function tick() {
+    if (!state.active) return;
+    var rem = Math.max(0, state.endAt - Date.now());
+    var secs = Math.ceil(rem / 1000);
+    $('timeText').textContent = fmt(secs);
+    $('barFill').style.width = (rem / state.total * 100) + '%';
+    $('play').classList.toggle('urgent', secs <= 10 && secs > 0);
+    if (secs <= 5 && secs > 0 && secs !== state.lastSec) sfx.tick();
+    state.lastSec = secs;
+    if (rem <= 0) endRound();
+  }
+
+  function mark(kind) {
+    if (!state.active || state.locked) return;
+    state.locked = true;
+    var play = $('play');
+    if (kind === 'ok') {
+      state.correct.push(state.current);
+      $('scoreNum').textContent = String(state.correct.length);
+      $('word').textContent = '¡Correcto!';
+      play.classList.add('good');
+      sfx.ok();
+      try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) {}
+    } else {
+      state.passed.push(state.current);
+      $('word').textContent = 'Pasamos';
+      play.classList.add('skip');
+      sfx.skip();
+    }
+    setTimeout(function () {
+      if (!state.active) return;
+      play.classList.remove('good', 'skip');
+      state.locked = false;
+      setWord();
+    }, 550);
+  }
+
+  function endRound() {
+    if (!state.active) return;
+    state.active = false;
+    clearInterval(state.timer);
+    clearTimeout(noteTimer);
+    keepAwake(false);
+    sfx.end();
+    showResults();
+  }
+
+  /* ---------- Resultados ---------- */
+  function fillChips(listId, boxId, words) {
+    var ul = $(listId);
+    ul.textContent = '';
+    words.forEach(function (w) {
+      var li = document.createElement('li');
+      li.textContent = w;
+      ul.appendChild(li);
+    });
+    $(boxId).hidden = words.length === 0;
+  }
+
+  function showResults() {
+    var n = state.correct.length;
+    var id = state.deck.id;
+    var prev = store.best[id] || 0;
+    var record = n > prev && n > 0;
+    if (record) { store.best[id] = n; save(); }
+
+    $('finalScore').textContent = String(n);
+    $('finalLabel').textContent = n === 1 ? 'acierto' : 'aciertos';
+    var msg;
+    if (n === 0) msg = '¡Buen intento! La próxima sale mejor.';
+    else if (n < 5) msg = '¡Bien hecho!';
+    else if (n < 10) msg = '¡Excelente equipo!';
+    else msg = '¡Increíble! ¡Son unos campeones!';
+    $('finalMsg').textContent = msg;
+    $('recordMsg').hidden = !record;
+    fillChips('okList', 'listOk', state.correct);
+    fillChips('passList', 'listPass', state.passed);
+    show('results');
+  }
+
+  /* ---------- Inclinación (modo frente) ---------- */
+  // Componente vertical del eje de la pantalla: +1 pantalla hacia el techo, -1 hacia el piso, 0 teléfono vertical.
+  var tiltArmed = false, gotOrient = false, noteTimer = null, wakeLock = null;
+  var NEUTRAL = 0.25, TRIGGER = 0.55;
+
+  function onOrient(e) {
+    if (e.beta == null || e.gamma == null) return;
+    gotOrient = true;
+    if (!store.tilt || !state.active) return;
+    var up = Math.cos(e.beta * Math.PI / 180) * Math.cos(e.gamma * Math.PI / 180);
+    if (Math.abs(up) < NEUTRAL) { tiltArmed = true; return; }
+    if (!tiltArmed || state.locked) return;
+    if (up < -TRIGGER) { tiltArmed = false; mark('ok'); }
+    else if (up > TRIGGER) { tiltArmed = false; mark('skip'); }
+  }
+  window.addEventListener('deviceorientation', onOrient);
+
+  function requestTilt(done) {
+    var D = window.DeviceOrientationEvent;
+    if (store.tilt && D && typeof D.requestPermission === 'function') {
+      D.requestPermission().then(function () { done(); }, function () { done(); });
+    } else {
+      done();
+    }
+  }
+
+  function keepAwake(on) {
+    try {
+      if (on && navigator.wakeLock) {
+        navigator.wakeLock.request('screen').then(function (l) { wakeLock = l; }, function () {});
+      } else if (!on && wakeLock) {
+        wakeLock.release();
+        wakeLock = null;
+      }
+    } catch (e) {}
+  }
+
+  /* ---------- Eventos ---------- */
+  var chips = document.querySelectorAll('[data-sec]');
+  for (var i = 0; i < chips.length; i++) {
+    chips[i].addEventListener('click', function (ev) {
+      store.sec = Number(ev.currentTarget.getAttribute('data-sec'));
+      save(); syncSettings();
+    });
+  }
+  $('soundBtn').addEventListener('click', function () {
+    store.sound = !store.sound;
+    if (store.sound) { ensureAudio(); sfx.ok(); }
+    save(); syncSettings();
+  });
+  $('tiltBtn').addEventListener('click', function () {
+    store.tilt = !store.tilt;
+    save(); syncSettings();
+    if (store.tilt) requestTilt(function () {});
+  });
+  $('backBtn').addEventListener('click', function () { renderDecks(); show('home'); });
+  $('startBtn').addEventListener('click', function () { ensureAudio(); requestTilt(runCountdown); });
+  $('okBtn').addEventListener('click', function () { mark('ok'); });
+  $('passBtn').addEventListener('click', function () { mark('skip'); });
+  $('endBtn').addEventListener('click', endRound);
+  $('againBtn').addEventListener('click', function () { ensureAudio(); requestTilt(runCountdown); });
+  $('homeBtn').addEventListener('click', function () { renderDecks(); show('home'); });
+  document.addEventListener('keydown', function (e) {
+    if (!state.active) return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); mark('ok'); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); mark('skip'); }
+  });
+
+  syncSettings();
+  renderDecks();
+  show('home');
+})();
+</script>
+</body>
+</html>
