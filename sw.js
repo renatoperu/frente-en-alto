@@ -1,6 +1,6 @@
 // Frente en Alto: caché para que la app abra sin internet.
 // Al publicar cambios en el juego, sube el número de versión.
-var CACHE = 'frente-en-alto-v1';
+var CACHE = 'frente-en-alto-v2';
 var ASSETS = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 var FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 
