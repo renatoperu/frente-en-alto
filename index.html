@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1E1B5E">
+<meta name="description" content="Juego de adivinar palabras en español para toda la familia.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Frente en Alto">
 <title>Frente en Alto</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&display=swap">
 <style>
@@ -208,6 +215,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
       <button class="chip" data-sec="90" aria-pressed="false">90 s</button>
       <button class="chip" id="soundBtn" aria-pressed="true">Sonido: sí</button>
       <button class="chip" id="tiltBtn" aria-pressed="false">Modo frente: no</button>
+      <button class="chip" id="installBtn" hidden>Instalar app</button>
     </div>
 
     <h2 class="section-title">Elige un mazo</h2>
@@ -609,6 +617,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
       "Piedra", "Roca", "Arena", "Barro", "Charco", "Tierra",
       "Cristal", "Diamante", "Oro", "Plata", "Fósil", "Hielo",
       "Agua", "Aire", "Orquídea", "Lirio", "Jazmín", "Lavanda"
+    ] },
+    { id: "mundo", name: "Países y ciudades", emoji: "🌎", color: "#FFB347", words: [
+      "Perú", "México", "Argentina", "Brasil", "Chile", "Colombia",
+      "Ecuador", "Bolivia", "Uruguay", "Paraguay", "Venezuela", "Estados Unidos",
+      "Canadá", "España", "Francia", "Italia", "Alemania", "Inglaterra",
+      "Portugal", "Holanda", "Grecia", "Rusia", "China", "Japón",
+      "India", "Egipto", "Australia", "Nueva Zelanda", "Sudáfrica", "Marruecos",
+      "Cuba", "Costa Rica", "Panamá", "Guatemala", "Jamaica", "Suiza",
+      "Suecia", "Noruega", "Turquía", "Corea", "Tailandia", "Kenia",
+      "Madagascar", "Islandia", "Hawái", "París", "Londres", "Nueva York",
+      "Roma", "Madrid", "Barcelona", "Tokio", "Río de Janeiro", "Buenos Aires",
+      "Santiago", "Bogotá", "Quito", "La Paz", "Ciudad de México", "Venecia",
+      "Torre Eiffel", "Estatua de la Libertad", "Coliseo romano", "Gran Muralla China", "Pirámides de Egipto", "Taj Mahal",
+      "Big Ben", "Cristo Redentor", "Cataratas del Iguazú", "Torre de Pisa", "Casa Blanca", "Ópera de Sídney",
+      "Disneylandia", "Polo Norte", "Polo Sur", "Antártida", "América", "Europa",
+      "Asia", "África", "Oceanía", "Amazonas", "Andes", "Sahara",
+      "Himalaya", "Everest", "Río Nilo", "Gran Cañón", "Cataratas del Niágara", "Mar Caribe"
     ] }
   ];
 
@@ -952,6 +977,25 @@ button { font: inherit; color: inherit; cursor: pointer; }
     if (e.key === 'ArrowRight') { e.preventDefault(); mark('ok'); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); mark('skip'); }
   });
+
+  /* ---------- App instalable ---------- */
+  var installEvt = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    installEvt = e;
+    $('installBtn').hidden = false;
+  });
+  $('installBtn').addEventListener('click', function () {
+    if (!installEvt) return;
+    installEvt.prompt();
+    installEvt.userChoice.then(function () { installEvt = null; $('installBtn').hidden = true; }, function () {});
+  });
+  window.addEventListener('appinstalled', function () { $('installBtn').hidden = true; });
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
 
   syncSettings();
   renderDecks();
